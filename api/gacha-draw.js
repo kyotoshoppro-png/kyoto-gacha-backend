@@ -7,8 +7,6 @@ export default async function handler(req, res) {
     const { data: prizes, error } = await supabase
       .from("gacha_prizes")
       .select("*")
-      .eq("gacha_id", gacha_id)
-      .gt("quantity_left", 0);
 
     if (error) throw error;
 
