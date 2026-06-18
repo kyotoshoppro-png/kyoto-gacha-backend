@@ -5,13 +5,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+function setCors(res) {
+  res.setHeader("Access-Control-Allow-Origin", "https://www.kyotoshop.fr");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
 export default async function handler(req, res) {
+  setCors(res);
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
-    return res.status(405).json({ success: false, error: "Method not allowed" });
+    return res.status(405).json({ success: false, error: "Method not allowed", tickets: 0 });
   }
 
   try {
-    const { customer_id, email } = req.body || {};
+    const { customer_id } = req.body || {};
 
     if (!customer_id) {
       return res.status(400).json({
