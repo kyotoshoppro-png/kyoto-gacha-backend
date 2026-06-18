@@ -33,12 +33,10 @@ export default async function handler(req, res) {
 
     if (error) throw error;
 
-    const normalPrizes = (prizes || []).filter(p => !p.is_last_one);
-
-    const ticketsLeft = normalPrizes.reduce(
-      (sum, p) => sum + Number(p.quantity_left || 0),
-      0
-    );
+    const ticketsLeft = (prizes || []).reduce(
+  (sum, p) => sum + Number(p.quantity_left || 0),
+  0
+);
 
     return res.status(200).json({
       success:true,
