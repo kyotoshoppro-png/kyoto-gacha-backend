@@ -35,24 +35,25 @@ function getTicketsFromProduct(title = "") {
 
   if (
     cleanTitle.includes("x10") ||
-    cleanTitle.includes("10 tirage")
+    cleanTitle.includes("10 tirage") ||
+    cleanTitle.includes("10 tickets")
   ) {
-    if (
-      cleanTitle.includes("+1") ||
-      cleanTitle.includes("1 gratuit") ||
-      cleanTitle.includes("+ 1")
-    ) {
-      return 11;
-    }
-
-    return 10;
+    return 11;
   }
 
-  if (cleanTitle.includes("x5") || cleanTitle.includes("5 tirage")) {
+  if (
+    cleanTitle.includes("x5") ||
+    cleanTitle.includes("5 tirage") ||
+    cleanTitle.includes("5 tickets")
+  ) {
     return 5;
   }
 
-  if (cleanTitle.includes("x1") || cleanTitle.includes("1 tirage")) {
+  if (
+    cleanTitle.includes("x1") ||
+    cleanTitle.includes("1 tirage") ||
+    cleanTitle.includes("1 ticket")
+  ) {
     return 1;
   }
 
@@ -86,11 +87,11 @@ export default async function handler(req, res) {
     }
 
     let ticketsToAdd = 0;
-    let productTitles = [];
+    const productTitles = [];
 
     for (const item of order.line_items || []) {
       const title = item.title || "";
-      const quantity = item.quantity || 1;
+      const quantity = Number(item.quantity || 1);
       const tickets = getTicketsFromProduct(title);
 
       if (tickets > 0) {
@@ -106,11 +107,13 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: existingTransaction } = await supabase
+    const { data: existingTransaction, error: existingError } = await supabase
       .from("gacha_ticket_transactions")
       .select("id")
       .eq("shopify_order_id", shopifyOrderId)
       .maybeSingle();
+
+    if (existingError) throw existingError;
 
     if (existingTransaction) {
       return res.status(200).json({
@@ -119,33 +122,39 @@ export default async function handler(req, res) {
       });
     }
 
-    const { data: customer } = await supabase
+    const { data: customer, error: customerError } = await supabase
       .from("gacha_customers")
       .select("*")
       .eq("shopify_customer_id", customerId)
       .maybeSingle();
 
+    if (customerError) throw customerError;
+
     if (customer) {
       const newBalance = Number(customer.tickets_balance || 0) + ticketsToAdd;
 
-      await supabase
+      const { error: updateError } = await supabase
         .from("gacha_customers")
         .update({
           tickets_balance: newBalance,
           email
         })
         .eq("shopify_customer_id", customerId);
+
+      if (updateError) throw updateError;
     } else {
-      await supabase
+      const { error: insertCustomerError } = await supabase
         .from("gacha_customers")
         .insert({
           shopify_customer_id: customerId,
           email,
           tickets_balance: ticketsToAdd
         });
+
+      if (insertCustomerError) throw insertCustomerError;
     }
 
-    await supabase
+    const { error: transactionError } = await supabase
       .from("gacha_ticket_transactions")
       .insert({
         shopify_order_id: shopifyOrderId,
@@ -154,6 +163,8 @@ export default async function handler(req, res) {
         tickets_added: ticketsToAdd,
         product_title: productTitles.join(" / ")
       });
+
+    if (transactionError) throw transactionError;
 
     return res.status(200).json({
       success: true,
