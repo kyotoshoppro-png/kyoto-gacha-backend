@@ -164,15 +164,16 @@ export default async function handler(req, res) {
     if (updateCustomerError) throw updateCustomerError;
 
     const drawRows = results.map((prize) => ({
-      gacha_id: String(gacha_id),
-      shopify_customer_id: String(customer_id),
-      email: email || customer.email || null,
-      tickets_used: prize.is_last_one ? 0 : 1,
-      prize_id: prize.id,
-      prize_title: prize.title,
-      prize_rarity: prize.rarity,
-      is_last_one: Boolean(prize.is_last_one)
-    }));
+  gacha_id: String(gacha_id),
+  shopify_customer_id: String(customer_id),
+  email: email || customer.email || null,
+  tickets_used: prize.is_last_one ? 0 : 1,
+  prize_id: prize.id,
+  prize_title: prize.title,
+  prize_rarity: prize.rarity,
+  image_url: prize.image_url || null,
+  is_last_one: Boolean(prize.is_last_one)
+}));
 
     const { error: drawInsertError } = await supabase
       .from("gacha_draws")
