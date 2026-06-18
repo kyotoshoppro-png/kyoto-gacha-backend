@@ -33,9 +33,28 @@ function verifyShopifyWebhook(rawBody, hmacHeader) {
 function getTicketsFromProduct(title = "") {
   const cleanTitle = title.toLowerCase();
 
-  if (cleanTitle.includes("x10")) return 10;
-  if (cleanTitle.includes("x5")) return 5;
-  if (cleanTitle.includes("x1")) return 1;
+  if (
+    cleanTitle.includes("x10") ||
+    cleanTitle.includes("10 tirage")
+  ) {
+    if (
+      cleanTitle.includes("+1") ||
+      cleanTitle.includes("1 gratuit") ||
+      cleanTitle.includes("+ 1")
+    ) {
+      return 11;
+    }
+
+    return 10;
+  }
+
+  if (cleanTitle.includes("x5") || cleanTitle.includes("5 tirage")) {
+    return 5;
+  }
+
+  if (cleanTitle.includes("x1") || cleanTitle.includes("1 tirage")) {
+    return 1;
+  }
 
   return 0;
 }
