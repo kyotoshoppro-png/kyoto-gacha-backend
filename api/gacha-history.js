@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("gacha_draws")
-      .select("prize_title, prize_rarity, tickets_used, is_last_one, created_at")
+      .select("prize_title, prize_rarity, tickets_used, is_last_one, created_at, image_url")
       .eq("gacha_id", String(gacha_id))
       .eq("shopify_customer_id", String(customer_id))
       .order("created_at", { ascending: false })
