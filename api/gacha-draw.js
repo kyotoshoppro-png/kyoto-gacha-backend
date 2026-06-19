@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       const prize = pickRandomPrize(currentPrizes);
       if (!prize) break;
 
-      const prizeIndex = currentPrizes.findIndex((p) => p.id === prize.id);
+      const prizeIndex = currentPrizes.findIndex((p) => p.prize_key === prize.prize_key);
       const newQuantityLeft = Number(currentPrizes[prizeIndex].quantity_left || 0) - 1;
 
       currentPrizes[prizeIndex].quantity_left = newQuantityLeft;
@@ -93,13 +93,14 @@ export default async function handler(req, res) {
       const { error: updatePrizeError } = await supabase
         .from("gacha_prizes")
         .update({ quantity_left: newQuantityLeft })
-        .eq("id", prize.id);
+        .eq("prize_key", prize.prize_key);
 
       if (updatePrizeError) throw updatePrizeError;
 
       results.push({
-        id: prize.id,
-        prize_id: prize.id,
+       id: prize.prize_key,
+prize_id: prize.prize_key,
+shopify_product_id: prize.id,
         title: prize.title,
         prize_title: prize.title,
         rarity: prize.rarity,
