@@ -85,8 +85,16 @@ export default async function handler(req, res) {
       const prize = pickRandomPrize(currentPrizes);
       if (!prize) break;
 
-      const prizeIndex = currentPrizes.findIndex((p) => p.prize_key === prize.prize_key);
-      const newQuantityLeft = Number(currentPrizes[prizeIndex].quantity_left || 0) - 1;
+      const prizeIndex = currentPrizes.findIndex(
+        (p) => p.prize_key === prize.prize_key
+      );
+
+      if (prizeIndex === -1) {
+        throw new Error("Lot introuvable avec prize_key.");
+      }
+
+      const newQuantityLeft =
+        Number(currentPrizes[prizeIndex].quantity_left || 0) - 1;
 
       currentPrizes[prizeIndex].quantity_left = newQuantityLeft;
 
@@ -98,9 +106,9 @@ export default async function handler(req, res) {
       if (updatePrizeError) throw updatePrizeError;
 
       results.push({
-       id: prize.prize_key,
-prize_id: prize.prize_key,
-shopify_product_id: prize.id,
+        id: prize.prize_key,
+        prize_id: prize.prize_key,
+        shopify_product_id: prize.id,
         title: prize.title,
         prize_title: prize.title,
         rarity: prize.rarity,
@@ -133,13 +141,14 @@ shopify_product_id: prize.id,
         const { error: updateLastOneError } = await supabase
           .from("gacha_prizes")
           .update({ quantity_left: 0 })
-          .eq("id", lastOne.id);
+          .eq("prize_key", lastOne.prize_key);
 
         if (updateLastOneError) throw updateLastOneError;
 
         results.push({
-          id: lastOne.id,
-          prize_id: lastOne.id,
+          id: lastOne.prize_key,
+          prize_id: lastOne.prize_key,
+          shopify_product_id: lastOne.id,
           title: lastOne.title,
           prize_title: lastOne.title,
           rarity: lastOne.rarity,
@@ -152,7 +161,10 @@ shopify_product_id: prize.id,
     }
 
     const ticketsUsed = results.filter((p) => !p.is_last_one).length;
-    const newBalance = Math.max(Number(customer.tickets_balance || 0) - ticketsUsed, 0);
+    const newBalance = Math.max(
+      Number(customer.tickets_balance || 0) - ticketsUsed,
+      0
+    );
 
     const { error: updateCustomerError } = await supabase
       .from("gacha_customers")
@@ -165,16 +177,16 @@ shopify_product_id: prize.id,
     if (updateCustomerError) throw updateCustomerError;
 
     const drawRows = results.map((prize) => ({
-  gacha_id: String(gacha_id),
-  shopify_customer_id: String(customer_id),
-  email: email || customer.email || null,
-  tickets_used: prize.is_last_one ? 0 : 1,
-  prize_id: prize.id,
-  prize_title: prize.title,
-  prize_rarity: prize.rarity,
-  image_url: prize.image_url || null,
-  is_last_one: Boolean(prize.is_last_one)
-}));
+      gacha_id: String(gacha_id),
+      shopify_customer_id: String(customer_id),
+      email: email || customer.email || null,
+      tickets_used: prize.is_last_one ? 0 : 1,
+      prize_id: prize.prize_id,
+      prize_title: prize.title,
+      prize_rarity: prize.rarity,
+      image_url: prize.image_url || null,
+      is_last_one: Boolean(prize.is_last_one)
+    }));
 
     const { error: drawInsertError } = await supabase
       .from("gacha_draws")
@@ -191,7 +203,6 @@ shopify_product_id: prize.id,
       tickets_left: totalTicketsLeftAfter,
       last_one_unlocked: Boolean(lastOnePrize)
     });
-
   } catch (err) {
     console.error("Gacha draw error:", err);
     return res.status(500).json({
